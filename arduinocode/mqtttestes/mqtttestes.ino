@@ -27,7 +27,18 @@ byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
 #define AIO_SERVER      "mqtt.sj.ifsc.edu.br"
 #define AIO_SERVERPORT  1883
 #define AIO_USERNAME    "arduino"
-#define AIO_KEY         ""
+
+#define fim_curso_aberto 52
+#define fim_curso_fechado 22
+#define TRIGGER_PIN1  30
+#define ECHO_PIN1     28
+#define MAX_DISTANCE 200
+
+int IN3 = 36;
+int IN4 = 38;
+int vel = 34;
+
+
 
 EthernetClient client; //inicia cliente ethernet
 
@@ -35,7 +46,7 @@ const char MQTT_SERVER[] PROGMEM = AIO_SERVER;
 
 const char MQTT_CLIENTID[] PROGMEM  = __TIME__ AIO_USERNAME; //cliente id = horario+username
 const char MQTT_USERNAME[] PROGMEM  = AIO_USERNAME;
-const char MQTT_PASSWORD[] PROGMEM  = AIO_KEY;
+
 
 Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, AIO_SERVERPORT, MQTT_CLIENTID, MQTT_USERNAME);
 
@@ -54,12 +65,20 @@ Adafruit_MQTT_Subscribe subcomandos = Adafruit_MQTT_Subscribe(&mqtt, comandos);
 
 /*************************** Sketch Code ************************************/
 
+NewPing sonar1(TRIGGER_PIN1, ECHO_PIN1, MAX_DISTANCE);
+
 void setup() {
   Serial.begin(115200);
 
   Serial.print(F("\nInicializando Cliente MQTT"));
   Ethernet.begin(mac);
   delay(1000);
+
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  pinMode(vel, OUTPUT);
+  pinMode(fim_curso_aberto, INPUT);
+  pinMode(fim_curso_fechado, INPUT);
   
 
   mqtt.subscribe(&subcomandos);
