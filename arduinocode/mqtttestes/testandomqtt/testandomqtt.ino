@@ -5,8 +5,8 @@
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 
-#define fim_curso_aberto 52
-#define fim_curso_fechado 22
+#define fim_curso_aberto 2 //fio laranja, fio verde = gnd
+#define fim_curso_fechado 3 //fio laranja
 #define TRIGGER_PIN1  30
 #define ECHO_PIN1     28
 #define MAX_DISTANCE 200
@@ -51,9 +51,9 @@ const char ONOFF_FEED[] PROGMEM = AIO_USERNAME "/feeds/onoff";
 Adafruit_MQTT_Subscribe onoffbutton = Adafruit_MQTT_Subscribe(&mqtt, ONOFF_FEED);
 
 
-char *doorcomand[1]; //1 - abre/fecha, 2- abre (implementar), 3 - fecha (implementar)
+char *doorcomand[1]; //1 - abre/espera/fecha, 2- abre (implementar), 3 - fecha (implementar)
 
-uint32_t doorstatus = 0; //1-aberto, 0-fechado, 2-abrindo, 3-fechando;
+uint32_t doorstatus = 3; //1-aberto, 2-fechando/abrindo, 3-fechado;
 
 void setup() {
 
@@ -81,56 +81,101 @@ mqtt.subscribe(&subcomandos); //inscreve no topico /porta/comandos
 
 void loop() {
 
-  digitalWrite(7, HIGH); //acende vermelho
+  //digitalWrite(7, HIGH); //acende vermelho
   Serial.println(Ethernet.localIP());
   MQTT_connect(); //rotina conecta mqtt
 
 
+
+
+
 //---- config motor (estudar) -------//
-  int aberto = digitalRead(fim_curso_aberto);
-  int fechado = digitalRead(fim_curso_fechado);
+
   float distancia = sonar1.ping_cm();
 
-  char porta_fechada_str[10];
-  char porta_aberta_str[10];
+  
    
-  itoa(fechado, porta_fechada_str, 10);
-  itoa(aberto, porta_aberta_str, 10);
+ 
 //----------------------------------------//
 
 
+
   publicar(doorstatus); //rotina publicar para o status atual da porta
-  
     
   subscriber(); //rotina para verificar se chegou algum dado do tópico inscrito
   
-  if ((distancia > 0 && distancia <= 30) || *doorcomand[0] == '1'){ //testa o valor da variavel doorcomand para saber o que fazer
+  if ( *doorcomand[0] == '2' && doorstatus == 3 ){ //apenas abrirá se porta estiver fechada.
+
+    portaAbrir();
+    
+  }
+
+  if ( *doorcomand[0] == '3' && doorstatus == 1) { //apenas fechará se porta estiver aberta
+
+    portaFechar();
+    
+  }
+
+  if ( ((distancia > 0 && distancia <= 30) || *doorcomand[0] == '1') && doorstatus == 3) { //apenas abrirá/fechará se porta já estiver fechada
+
+    portaAbrir();
+    delay(5000);
+    portaFechar();
+  
+  }
+  
+    delay(5000);
+
+
+
+ 
+  }
+
+
+
+void portaAbrir() {
+  
     digitalWrite(7, LOW); //apaga led vermelho fechado
     digitalWrite(6, HIGH); // acende led amarelo abrindo
     doorstatus = 2; //abrindo
     publicar(doorstatus);
-    delay(5000);
+    //delay(5000);
     Serial.println("ABRIR PORTA");
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
     analogWrite(vel, 220);
-    delay(5000);
-    while (aberto == 1) {
+    //delay(5000);
+
+
+    int aberto = digitalRead(fim_curso_aberto);
+    while (aberto == 0) {
+      Serial.println("Porta abrindo");
       aberto = digitalRead(fim_curso_aberto);
-    }
-    digitalWrite(6, LOW); //apaga led amarelo
-    digitalWrite(5, HIGH); //Acende led verde aberto
-    Serial.println("FIM DE CURSO ABERTO");
-    doorstatus = 1; //aberta
-    publicar(doorstatus);
-    digitalWrite(IN3, HIGH);
-    digitalWrite(IN4, HIGH);
+      //delay(500);
+      }
     
 
-    delay(5000);
+    
+    digitalWrite(IN3, HIGH); //para porta
+    digitalWrite(IN4, HIGH); //para porta
+    digitalWrite(6, LOW); //apaga led amarelo
+    digitalWrite(5, HIGH); //Acende led verde aberto
+   
+    Serial.println("------------- PORTA ABERTA ----------------");
+    doorstatus = 1; //aberta
+    publicar(doorstatus);
+ 
+
+    *doorcomand[0] == '0';
+
+
+  
+}
+
+void portaFechar() {
 
     Serial.println("FECHAR PORTA");
-    doorstatus = 3; //fechando
+    doorstatus = 2; //fechando
     publicar(doorstatus);
     digitalWrite(6, HIGH); //acende led amarelo
     digitalWrite(5, LOW); //apaga led verde aberto
@@ -138,30 +183,30 @@ void loop() {
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, HIGH);
     analogWrite(vel, 220);
-    while (fechado == 1) {
+    int fechado = digitalRead(fim_curso_fechado);
+    while (fechado == 0) {
+      Serial.println("Porta fechando");
       fechado = digitalRead(fim_curso_fechado);
+      //delay(500);
     }
-    Serial.println("FIM DE CURSO FECHADO");
+    
+    Serial.println("Porta Fechada");
+
+    
+    digitalWrite(IN3, HIGH); //parar porta
+    digitalWrite(IN4, HIGH); //parar porta
+    
     digitalWrite(6, LOW); //apaga amarelo
     digitalWrite(7, HIGH); //acende vermelho
-    digitalWrite(IN3, HIGH);
-    digitalWrite(IN4, HIGH);
-    doorstatus = 0; //fechada
+    
+    doorstatus = 3; //fechada
     publicar(doorstatus);
     *doorcomand[0] = '0';
-    delay(5000);
-  }
-
+  
 }
+
+
 void publicar(uint32_t x) {
- Serial.print(F("\nSending photocell val "));
-  Serial.print(x);
-  Serial.print("...");
-  if (! photocell.publish(x++)) {
-    Serial.println(F("Failed"));
-  } else {
-    Serial.println(F("OK!"));
-  }
 
 Serial.print(F("\nEnviando status "));
 Serial.print(x);
