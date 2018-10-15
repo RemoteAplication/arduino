@@ -9,13 +9,25 @@
 
   <body>
     <script src="./index.js"></script>
-    <input id="topic" type="text" value="Arduino1/porta/comandos">
-    <input id="message" type="text" value="b">
-    <button onclick="sendMessage()">Envia</button>
-    <ul id="myList">
-    </ul>
-<p>teste</p>
-	<img src="http://191.36.15.57/Streaming/channels/1/preview" style="height: 99.5%;" width="100%" height="100%">
+    <table>
+    <tr align = "center" width = "100%">
+	<td align = "center" width = "100%"> 
+	<button id="message" align = "center" onclick="sendMessage('1')" value="1">ABRIR/ESPERAR/FECHAR</button>
+    	<button id="message" align = "center" onclick="sendMessage('2')" value="2">ABRIR</button>
+    	<button id="message" align = "center" onclick="sendMessage('3')" value="3">FECHAR</button></td>
+    </tr>
+    <tr>
+	
+    <td id = "left" height="100%" width="50%" align="center">
+
+	<img id="exibirstatus" width="150px" heigth="100px">
+	
+    </td>
+   <td id ="center" height="100%" align="top" width="50%">
+	<img align ="center" id ="video" src="http://191.36.15.57/Streaming/channels/1/preview" width="640px" heght="640px" >
+   </td>
+</tr>
+</table>
   </body>
 
 </html>
