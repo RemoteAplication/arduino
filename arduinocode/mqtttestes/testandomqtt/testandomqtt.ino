@@ -3,7 +3,6 @@
 #include <SPI.h>
 #include <NewPing.h>
 #include <Ethernet.h>
-#include <PubSubClient.h>
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 #include <MFRC522.h>
@@ -12,8 +11,8 @@
 //sensores
 #define fim_curso_aberto 2 //fio laranja, fio verde = gnd
 #define fim_curso_fechado 3 //fio laranja
-#define TRIGGER_PIN1  30
-#define ECHO_PIN1     28
+#define TRIGGER_PIN1  8
+#define ECHO_PIN1     9
 #define MAX_DISTANCE 200
 
 
@@ -32,7 +31,7 @@ const char MQTT_PASSWORD[] PROGMEM  = AIO_KEY;
 int IN3 = 36;
 int IN4 = 38;
 int vel = 34;
-
+//alisson
 //Configs Ethernet
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
 EthernetClient client;
@@ -41,10 +40,10 @@ EthernetClient client;
 NewPing sonar1(TRIGGER_PIN1, ECHO_PIN1, MAX_DISTANCE);
 
 #define SS_PIN 53
-#define RST_PIN 9
+#define RST_PIN 48
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 
-uint8_t qos = 1;
+uint8_t qos = 2;
 //Inicia valores para mqtt
 Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, AIO_SERVERPORT, MQTT_CLIENTID, MQTT_USERNAME); //cria client mqtt
 const char PORTASTATUS[] PROGMEM = AIO_USERNAME "/porta/status"; //atribui tópico a ser publicado
@@ -66,7 +65,7 @@ void setup() {
 
   Serial.begin(9600); //Inicia Serial
   SPI.begin();      // Inicia  SPI bus
-  
+  mfrc522.PCD_Init();   // Inicia MFRC522
   //Configs pinagens
   pinMode(IN3, OUTPUT); //ponte H
   pinMode(IN4, OUTPUT); //ponte H
@@ -86,7 +85,7 @@ void setup() {
   mqtt.subscribe(&subcomandos); //inscreve no topico /porta/comandos
     
   
-  mfrc522.PCD_Init();   // Inicia MFRC522
+
 
 
   
@@ -101,13 +100,15 @@ void loop() {
   }
 
   MQTT_connect(); //rotina conecta mqtt
-
+    float distancia = sonar1.ping_cm();
+    Serial.println(distancia);
    //obtem distancia sentida pelo sonar
 
   publicar(doorstatus); //rotina publicar para o status atual da porta
 
   subscriber(); //rotina para verificar se chegou algum dado do tópico inscrito
   //Serial.println(distancia);
+  
   if (! commandlist.isEmpty()){
 
 
@@ -115,7 +116,12 @@ void loop() {
     Serial.print("Desenfileirou ");
     Serial.println(doorcomand[0]);
 
-   
+  
+  } else {
+
+    doorcomand[0] = 0;
+    Serial.println("Fila de comandos vazia!");
+    
   }
 
   if (*doorcomand[0] == '2' && doorstatus == 3){ //apenas abrirá se porta estiver fechada.
@@ -129,6 +135,7 @@ void loop() {
    if (((verificarfid()) || *doorcomand[0] == '1') && doorstatus == 3) { //apenas abrirá/fechará se porta já estiver fechada
    portaAbrir(); //abre porta
     delay(5000); //aguarda 5 segundos
+    publicar(doorstatus);
    portaFechar(); //fecha porta
    }
 
@@ -147,8 +154,25 @@ void portaAbrir() {
   doorstatus = 2; //altera estado para abrindo
 
   while (distancia > 10) {
+    if (distancia <29) {
+      digitalWrite(6, LOW);
+      delay(200);
+      digitalWrite(6, HIGH);
+    }
+    if (distancia <20) {
+     digitalWrite(6, LOW);
+     delay(100);
+     digitalWrite(6, HIGH);
+    }
+    if (distancia <15) {
+     digitalWrite(6, LOW);
+     delay(50);
+     digitalWrite(6, HIGH);
+    }
+    
     Serial.println("Porta abrindo");
     distancia = sonar1.ping_cm();
+    Serial.println(distancia);
     publicar(doorstatus); //publica estado da porta abrindo
   }
 
@@ -161,7 +185,7 @@ void portaAbrir() {
   Serial.println("------------- PORTA ABERTA ----------------");
 
   doorstatus = 1; //altera estado para aberta
-
+  publicar(doorstatus);
   //*doorcomand[0] == '0'; //comando recebe 0 (nada)
 
 }

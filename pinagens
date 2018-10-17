@@ -1,0 +1,27 @@
+sensor ultra:
+
+verde = primeiro da direita 
+azul = gnd
+branco = 28
+laranja = 30
+
+ponte h 
+cinza 34
+branco 36
+preto 38
+
+sensor fechado
+
+verde que vira marrom = gnd
+marrom que vira laranja  3
+
+
+leds
+verde = 5
+amarelo = 6
+vermelho = 7
+
+id cartap = 10 9C 82 19
+id tag = 3D 39 62 62
+
+

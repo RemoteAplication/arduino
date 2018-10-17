@@ -36,7 +36,7 @@ function onMessageArrived(message) {
 
 function sendMessage(valor) {
   topic = "Arduino1/porta/comandos";
-  client.subscribe(topic);
+  //client.subscribe(topic);
   message = new Paho.MQTT.Message(valor);
   message.destinationName = topic;
   client.send(message);
