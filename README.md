@@ -43,3 +43,4 @@ Inscrever-se no seguinte tópico:
     Valores: 1,2 e 3. Abrir esperar e fechar, somente abrir e somente fechar respectivamente.
     
 Assim o Arduino vai receber todas as mensagens vindas no tópico inscrito e todos os clientes que se inscreverem no tópico que ele está publicando irão receber a mensagem publicada.
+# Strobo
